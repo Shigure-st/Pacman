@@ -1,0 +1,15 @@
+name: Notify Discord on Push (All Branches)
+
+on:
+  push:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_PUSH_WEBHOOK_URL }}
+        with:
+          args: "新しいコードがプッシュされました。\nリポジトリ: ${{ github.repository }}\nブランチ: ${{ github.ref_name }}\nコミットメッセージ: ${{ github.event.head_commit.message }}"
