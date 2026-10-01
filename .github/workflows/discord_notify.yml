@@ -1,0 +1,16 @@
+name: Notify Discord on Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification
+        uses: Ilshidur/action-discord@master
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        with:
+          args: "新しいIssueが作成されました: ${{ github.event.issue.title }} (${{ github.event.issue.html_url }})"
