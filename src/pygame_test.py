@@ -6,6 +6,11 @@ def my_pixel_put(screen, x: int, y: int, color: tuple[int, int, int]):
     if 0 <= x < w and 0 <= y < h:
         screen.set_at((x, y), color)
 
+def draw_rect(screen, x: int, y: int, w: int, h: int, color: tuple[int, int, int]):
+    for dy in range(h):
+        for dx in range(w):
+            my_pixel_put(screen, x + dx, y + dy, color)
+
 def main():
     pygame.init()
 
@@ -26,12 +31,16 @@ def main():
 
         screen.fill((0,0,0))
 
-        my_pixel_put(screen, 200, 200, (255, 255, 255))
+        draw_rect(screen, 50, 50, 200, 20, (0, 0, 255))
+        draw_rect(screen, 50, 50, 20, 150, (0, 0, 255))
+        draw_rect(screen, 50, 200, 200, 20, (0, 0, 255))
+        draw_rect(screen, 230, 50, 20, 150, (0, 0, 255))
 
-        my_pixel_put(screen, 0, 0, (255, 0, 0))
-        my_pixel_put(screen, 204, 200, (0, 255, 0))
-        my_pixel_put(screen, 206, 200, (0, 0, 255))
-        my_pixel_put(screen, 208, 200, (255, 255, 0))
+        draw_rect(screen, 100, 100, 4, 4, (255, 255, 255))
+        draw_rect(screen, 130, 100, 4, 4, (255, 255, 255))
+        draw_rect(screen, 160, 100, 4, 4, (255, 255, 255))
+
+        draw_rect(screen, 150, 150, 20, 20, (255, 255, 0))
 
         pygame.display.flip()
 
