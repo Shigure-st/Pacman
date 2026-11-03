@@ -41,6 +41,10 @@ def main():
     target_y = 100
     target_size = 20
 
+    foods = [(x, 240) for x in range(100, 320, 25)]
+    food_size = 6
+    score = 0
+
     running = True
     while running:
         for event in pygame.event.get():
@@ -82,6 +86,17 @@ def main():
         #
         # draw_rect(screen, 150, 150, 20, 20, (255, 255, 0))
         draw_rect(screen, pacman_x, pacman_y, pacman_size, pacman_size, pacman_color)
+        remaining_foods = []
+        for fx, fy in foods:
+            if check_collision(pacman_x, pacman_y, pacman_size, pacman_size,
+                               fx, fy, food_size, food_size):
+                score += 10
+                print(f"ワカワカ！　現在のスコア:{score}")
+            else:
+                remaining_foods.append((fx, fy))
+        foods = remaining_foods
+        for fx, fy in foods:
+            draw_rect(screen, fx, fy, food_size, food_size, (255, 255, 255))
 
         pygame.display.flip()
         clock.tick(60)
