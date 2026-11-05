@@ -21,6 +21,13 @@ def check_wall_collision(x1, y1, w1, h1, x2, y2, w2, h2):
         return False
     return True
 
+# 指定した座標(next_t, next_y)に動いた時、壁にぶつかるかを調べる関数
+def is_wall_at(next_x, next_y, size, walls) -> bool:
+    for wx, wy, ww, wh in walls:
+        if check_wall_collision(next_x, next_y, size, size, wx, wy, ww, wh):
+            return True
+    return False
+
 
 def main():
     # ★ 1. テキストで迷路マップをデザイン！
@@ -59,8 +66,10 @@ def main():
     foods = []
     pacman_x = 0
     pacman_y = 0
-    pacman_size = 16
-    speed = 2
+    pacman_size = 14
+    speed = 3
+
+    OFFSET = (TILE_SIZE - pacman_size) // 2
 
     for row, line in enumerate(MAZE_MAP):
         for col, char in enumerate(line):
@@ -71,8 +80,13 @@ def main():
             elif char == ".":
                 foods.append((x + 7, y + 7))
             elif char == "P":
-                pacman_x = x + 2
-                pacman_y = y + 2
+                pacman_x = x + 3
+                pacman_y = y + 3
+
+    dir_x = 0
+    dir_y = 0
+    next_dir_x = 0
+    next_dir_y = 0
 
     food_size = 6
     score = 0
@@ -85,31 +99,62 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     running = False
+                # キーを押した瞬間、次の方向を「予約」する
+                elif event.key == pygame.K_LEFT:
+                    next_dir_x, next_dir_y = -speed, 0
+                elif event.key == pygame.K_RIGHT:
+                    next_dir_x, next_dir_y = speed, 0
+                elif event.key == pygame.K_UP:
+                    next_dir_x, next_dir_y = 0, -speed
+                elif event.key == pygame.K_DOWN:
+                    next_dir_x, next_dir_y = 0, speed
 
-        keys = pygame.key.get_pressed()
-        dx = 0
-        dy = 0
-        if keys[pygame.K_LEFT]:
-            dx -= speed
-        if keys[pygame.K_RIGHT]:
-            dx += speed
-        if keys[pygame.K_UP]:
-            dy -= speed
-        if keys[pygame.K_DOWN]:
-            dy += speed
+        if (next_dir_x != 0 or next_dir_y != 0):
+            target_x = round((pacman_x - OFFSET) / TILE_SIZE) * TILE_SIZE + OFFSET if next_dir_y != 0 else pacman_x
+            target_y = round((pacman_y - OFFSET) / TILE_SIZE) * TILE_SIZE + OFFSET if next_dir_x != 0 else pacman_y
 
-        # x方向の移動と衝突判定
-        pacman_x += dx
-        for wx, wy, ww, wh in walls:
-            if check_wall_collision(pacman_x, pacman_y, pacman_size, pacman_size, wx, wy, ww, wh):
-                pacman_x -= dx
-                break
-        # x方向の移動と衝突判定
-        pacman_y += dy
-        for wx, wy, ww, wh in walls:
-            if check_wall_collision(pacman_x, pacman_y, pacman_size, pacman_size, wx, wy, ww, wh):
-                pacman_y -= dy
-                break
+            step_x = (next_dir_x > 0) - (next_dir_x < 0)
+            step_y = (next_dir_y > 0) - (next_dir_y < 0)
+
+            check_x = target_x + step_x * TILE_SIZE
+            check_y = target_y + step_y * TILE_SIZE
+
+            # if not is_wall_at(target_x + next_dir_x, target_y + next_dir_y, pacman_size, walls):
+            if not is_wall_at(check_x, check_y, pacman_size, walls):
+                pacman_x = target_x
+                pacman_y = target_y
+                dir_x = next_dir_x
+                dir_y = next_dir_y
+
+        if not is_wall_at(pacman_x + dir_x, pacman_y + dir_y, pacman_size, walls):
+            pacman_x += dir_x
+            pacman_y += dir_y
+
+
+        # keys = pygame.key.get_pressed()
+        # dx = 0
+        # dy = 0
+        # if keys[pygame.K_LEFT]:
+        #     dx -= speed
+        # if keys[pygame.K_RIGHT]:
+        #     dx += speed
+        # if keys[pygame.K_UP]:
+        #     dy -= speed
+        # if keys[pygame.K_DOWN]:
+        #     dy += speed
+
+        # # x方向の移動と衝突判定
+        # pacman_x += dx
+        # for wx, wy, ww, wh in walls:
+        #     if check_wall_collision(pacman_x, pacman_y, pacman_size, pacman_size, wx, wy, ww, wh):
+        #         pacman_x -= dx
+        #         break
+        # # x方向の移動と衝突判定
+        # pacman_y += dy
+        # for wx, wy, ww, wh in walls:
+        #     if check_wall_collision(pacman_x, pacman_y, pacman_size, pacman_size, wx, wy, ww, wh):
+        #         pacman_y -= dy
+        #         break
 
         # エサの判定を食べる処理
         remaining_foods = []
@@ -134,7 +179,7 @@ def main():
 
         draw_rect(screen, pacman_x, pacman_y, pacman_size, pacman_size, (255,255,0))
         pygame.display.flip()
-        clock.tick(120)
+        clock.tick(60)
 
     pygame.quit()
     sys.exit()
