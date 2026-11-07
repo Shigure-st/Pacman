@@ -1,5 +1,6 @@
 import pygame
 import sys
+import math
 
 def my_pixel_put(screen, x: int, y: int, color: tuple[int, int, int]):
     w, h = screen.get_size()
@@ -10,6 +11,49 @@ def draw_rect(screen, x: int, y: int, w: int, h: int, color: tuple[int, int, int
     for dy in range(h):
         for dx in range(w):
             my_pixel_put(screen, x + dx, y + dy, color)
+
+# 円の方程式で口パクパックマンを描く自作関数
+def draw_pacman(screen, cx, cy, radius, dir_x, dir_y, mouth_open: bool, color):
+    for dy in range(-radius, radius + 1):
+        for dx in range(-radius, radius + 1):
+            if dx * dx + dy * dy <= radius * radius:
+                if mouth_open:
+                    # 右向きの口
+                    if dir_x > 0 and dx > 0 and abs(dy) <= dx:
+                        continue
+                    # 左向きの口
+                    elif dir_x < 0 and dx < 0 and abs(dy) <= abs(dx):
+                        continue
+                    # 下向きの口
+                    elif dir_y > 0 and dy > 0 and abs(dx) <= abs(dy):
+                        continue
+                    # 上向きの口
+                    elif dir_y < 0 and dy < 0 and abs(dx) <= abs(dy):
+                        continue
+                my_pixel_put(screen, cx + dx, cy + dy, color)
+
+# 目玉のついたゴーストを描く自作関数
+def draw_ghost(screen, x, y, size, dir_x, dir_y, color):
+    # 体(四角)
+    draw_rect(screen, x, y + 4, size, size - 4, color)
+    # 頭(半円)
+    r = size // 2
+    cx = x + r
+    cy = y + r
+    for dy in range(-r, 0):
+        for dx in range(-r, r):
+            if dx * dx + dy * dy <= r * r:
+                my_pixel_put(screen, cx + dx, cy + dy, color)
+    # 目玉(白目)
+    draw_rect(screen, x + 2, y + 3, 3, 4, (255, 255, 255))
+    draw_rect(screen, x + 8, y + 3, 3, 4, (255, 255, 255))
+
+    # 黒目
+    p_dx = 1 if dir_x > 0 else (-1 if dir_x < 0 else 0)
+    p_dy = 1 if dir_y > 0 else (-1 if dir_y < 0 else 0)
+    draw_rect(screen, x + 3 + p_dx, y + 4 + p_dy, 2, 2, (0, 0, 200))
+    draw_rect(screen, x + 9 + p_dx, y + 4 + p_dy, 2, 2, (0, 0, 200))
+
 
 def check_food_collision(x1, y1, w1, h1, x2, y2, w2, h2):
     if x1 + w1 < x2 or x2 + w2 < x1 or y1 + h1 < y2 or y2 + h2 < y1:
@@ -111,7 +155,6 @@ def main():
 
     ghost_x = 0
     ghost_y = 0
-    ghost_size = 14
 
     OFFSET = (TILE_SIZE - pacman_size) // 2
 
@@ -142,8 +185,13 @@ def main():
     score = 0
     game_over = False
 
+    # アニメーション用のフレームカウンタ
+    frame_count = 0
+
     running = True
     while running:
+        frame_count += 1
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -177,10 +225,12 @@ def main():
                     pacman_y = target_y
                     dir_x = next_dir_x
                     dir_y = next_dir_y
+            # パックマン前進
             if not is_wall_at(pacman_x + dir_x, pacman_y + dir_y, pacman_size, walls):
                 pacman_x += dir_x
                 pacman_y += dir_y
 
+            # ゴースト移動
             is_at_center_x = (ghost_x - OFFSET) % TILE_SIZE == 0
             is_at_center_y = (ghost_y - OFFSET) % TILE_SIZE == 0
             if is_at_center_x and is_at_center_y:
@@ -193,32 +243,6 @@ def main():
             ghost_x += ghost_dir_x
             ghost_y += ghost_dir_y
 
-
-
-        # keys = pygame.key.get_pressed()
-        # dx = 0
-        # dy = 0
-        # if keys[pygame.K_LEFT]:
-        #     dx -= speed
-        # if keys[pygame.K_RIGHT]:
-        #     dx += speed
-        # if keys[pygame.K_UP]:
-        #     dy -= speed
-        # if keys[pygame.K_DOWN]:
-        #     dy += speed
-
-        # # x方向の移動と衝突判定
-        # pacman_x += dx
-        # for wx, wy, ww, wh in walls:
-        #     if check_wall_collision(pacman_x, pacman_y, pacman_size, pacman_size, wx, wy, ww, wh):
-        #         pacman_x -= dx
-        #         break
-        # # x方向の移動と衝突判定
-        # pacman_y += dy
-        # for wx, wy, ww, wh in walls:
-        #     if check_wall_collision(pacman_x, pacman_y, pacman_size, pacman_size, wx, wy, ww, wh):
-        #         pacman_y -= dy
-        #         break
 
         # エサの判定を食べる処理
         remaining_foods = []
@@ -244,13 +268,18 @@ def main():
         for wx, wy, ww, wh in walls:
             draw_rect(screen, wx, wy, ww, wh, (0, 0, 255))
 
+        # エサ
         for fx, fy in foods:
             draw_rect(screen, fx, fy, food_size, food_size, (255, 255, 255))
 
+        p_cx = pacman_x + pacman_size // 2
+        p_cy = pacman_y + pacman_size // 2
+        radius = pacman_size // 2
+        mouth_open = (frame_count // 10) % 2 == 0 if (dir_x != 0 or dir_y != 0) else False
         p_color = (100, 100, 100) if game_over else (255, 255, 0)
-        draw_rect(screen, pacman_x, pacman_y, pacman_size, pacman_size, p_color)
+        draw_pacman(screen, p_cx, p_cy, radius, dir_x, dir_y, mouth_open, p_color)
 
-        draw_rect(screen, ghost_x, ghost_y, pacman_size, pacman_size, (255, 0, 0))
+        draw_ghost(screen, ghost_x, ghost_y, pacman_size, ghost_dir_x, ghost_dir_y, (255, 0, 0))
         pygame.display.flip()
         clock.tick(60)
 
