@@ -35,6 +35,33 @@ def draw_line(screen, x0, y0, x1, y1, color):
         x += x_inc
         y += y_inc
 
+# 指定した座標が「壁の中」かどうかを調べる関数
+def is_wall(x, y):
+    col = int(x // TILE_SIZE)
+    row = int(y // TILE_SIZE)
+    # マップの範囲外は壁とみなす
+    if col < 0 or col >= len(MAZE_MAP[0]) or row < 0 or row >= len(MAZE_MAP):
+        return True
+    return MAZE_MAP[row][col] == "1"
+
+# プレイヤーから角度 angle に光線を飛ばし、壁にぶつかった座標と距離を返す関数
+def cast_single_ray(ox, oy, angle):
+    cos_a = math.cos(angle)
+    sin_a = math.sin(angle)
+
+    ray_x = ox
+    ray_y = oy
+
+    # 1ピクセルずつ最大400歩進めて壁を探す
+    for depth in range(400):
+        ray_x += cos_a
+        ray_y += sin_a
+        if is_wall(ray_x, ray_y):
+            return ray_x, ray_y, depth # ぶつかった座標と壁までの距離
+
+    return ray_x, ray_y, 400
+
+
 
 MAZE_MAP = [
     "11111111111111111111",
@@ -97,12 +124,20 @@ def main():
             player_angle -= rot_speed
         if keys[pygame.K_RIGHT]:
             player_angle += rot_speed
+
+        # 前進・後退(壁の中に入らないようにチェック)
+        new_x = player_x
+        new_y = player_y
         if keys[pygame.K_UP]:
-            player_x += math.cos(player_angle) * speed
-            player_y += math.sin(player_angle) * speed
+            new_x += math.cos(player_angle) * speed
+            new_y += math.sin(player_angle) * speed
         if keys[pygame.K_DOWN]:
-            player_x -= math.cos(player_angle) * speed
-            player_y -= math.sin(player_angle) * speed
+            new_x -= math.cos(player_angle) * speed
+            new_y -= math.sin(player_angle) * speed
+
+        # 壁でなければ移動を許可
+        if not is_wall(new_x, new_y):
+            player_x, player_y = new_x, new_y
 
         # 画面クリア
         screen.fill((0, 0, 0))
@@ -110,6 +145,15 @@ def main():
         # 迷路を描画
         for wx, wy, ww, wh in walls:
             draw_rect(screen, wx, wy, ww, wh, (0, 0, 200))
+
+        # 光線を1本飛ばす
+        hit_x, hit_y, depth = cast_single_ray(player_x, player_y, player_angle)
+
+        # プレイヤーから壁の衝突地点まで赤いレーザー光線を引く
+        draw_line(screen, player_x, player_y, hit_x, hit_y, (255, 0, 0))
+
+        # 衝突視点に小さな白い点をうつ
+        draw_circle(screen, int(hit_x), int(hit_y), 2, (255, 255, 255))
 
         # プレイヤー自身(黄色の丸)を描画
         draw_circle(screen, int(player_x), int(player_y), 4, (255, 255, 0))
