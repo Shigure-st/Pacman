@@ -1,4 +1,4 @@
-from game_object import GameObject
+from src.engine import GameObject
 from typing import Sequence, Self
 
 

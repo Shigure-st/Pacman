@@ -1,7 +1,7 @@
-from .util import Singleton
+from src.util import Singleton
 
 
-class GameEngine(Singleton):
+class Engine(Singleton):
     _scenes: dict[str, Scene]
 
     def __init__(self) -> None:
